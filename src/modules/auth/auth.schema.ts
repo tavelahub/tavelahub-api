@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { UserModelSchema } from '../../generated/zod/schemas';
 
-export const registerSchema = UserModelSchema.pick({
+const loginSchema = UserModelSchema.pick({
   email: true,
   password: true,
 }).extend({
@@ -16,5 +16,69 @@ export const registerSchema = UserModelSchema.pick({
     .regex(/^((?=.*[A-Za-z])(?=.*\d))(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/)
     .min(8)
     .max(100)
-    .openapi({ example: 'Jhon1234*' }),
+    .openapi({
+      example: 'Jhon1234*',
+      description:
+        'Password must be at least 8 characters long and contain at least one letter, one number, and one special character (@$!%*#?&).',
+    }),
 });
+
+const successAuthLogin = z.object({
+  success: z.string().openapi({ example: true }),
+  message: z.string().openapi({ example: 'Login successful.' }),
+  data: z.object({
+    accessToken: z.string().openapi({
+      example:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30',
+    }),
+    refreshToken: z.string().openapi({
+      example:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.KMUFsIDTnFmyG3nMiGM6H9FNFUROf3wh7SmqJp-QV30',
+    }),
+    expiresIn: z.number().openapi({ example: 3600 }),
+  }),
+});
+
+const errorMessageTemplate = z.object({
+  success: z.string(),
+  message: z.string(),
+});
+
+const unauthorizedError = errorMessageTemplate.openapi({
+  example: {
+    success: false,
+    message: 'Invalid email or password.',
+  },
+});
+
+const unprocessableEntityError = errorMessageTemplate
+  .extend({
+    errors: z.array(z.record(z.string(), z.array(z.string()))),
+  })
+  .openapi({
+    example: {
+      success: false,
+      message: 'Validation failed.',
+      errors: [
+        {
+          email: ['Email is required.'],
+          password: ['Password must be at least 8 characters.'],
+        },
+      ],
+    },
+  });
+
+const internalServerError = errorMessageTemplate.openapi({
+  example: {
+    success: false,
+    message: 'internal server error. failed to register.',
+  },
+});
+
+export {
+  loginSchema,
+  successAuthLogin,
+  unprocessableEntityError,
+  unauthorizedError,
+  internalServerError,
+};
