@@ -7,11 +7,13 @@ import {
   internalServerError,
   loginSchema,
   successAuthLogin,
+  timeOutError,
   unauthorizedError,
   unprocessableEntityError,
 } from '../modules/auth/auth.schema';
 import { signAccessToken, signRefreshToken } from '../lib/auth';
 import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace';
+import { getUserByEmail } from '../modules/user/user.services';
 
 const tags = ['Auth'];
 
@@ -53,7 +55,10 @@ authRoutes.openapi(
         description: 'Unauthorized',
         content: { 'application/json': { schema: unauthorizedError } },
       },
-      408: { description: 'request time out' },
+      408: {
+        description: 'request time out',
+        content: { 'application/json': { schema: timeOutError } },
+      },
       422: {
         description: 'Validation failed',
         content: { 'application/json': { schema: unprocessableEntityError } },
@@ -67,10 +72,7 @@ authRoutes.openapi(
   async (c) => {
     try {
       const { email, password } = c.req.valid('json');
-      const user = await prisma.user.findUniqueOrThrow({
-        where: { email },
-        include: { password: true },
-      });
+      const user = await getUserByEmail(email);
 
       if (!user.password) throw new Error('internal server error'); // not implemented yet
 
@@ -78,7 +80,7 @@ authRoutes.openapi(
         throw new Error('Invalid credential');
 
       const accessToken = await signAccessToken({ userId: user.id, email: user.email });
-      const refershToken = await signRefreshToken({ userId: user.id });
+      const refreshToken = await signRefreshToken({ userId: user.id });
 
       return c.json(
         {
@@ -86,7 +88,7 @@ authRoutes.openapi(
           message: 'Login successful.',
           data: {
             accessToken,
-            refershToken,
+            refreshToken,
             expiresIn: 3600,
           },
         },
@@ -106,12 +108,13 @@ authRoutes.openapi(
         }
       }
 
-      return c.json(error);
+      return c.json({ success: false, message: 'internal server error. failed to register' }, 500);
     }
   },
 );
 
 // Logout
+
 // Refresh token
 // Me
 

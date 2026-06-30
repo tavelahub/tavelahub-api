@@ -24,7 +24,7 @@ const loginSchema = UserModelSchema.pick({
 });
 
 const successAuthLogin = z.object({
-  success: z.string().openapi({ example: true }),
+  success: z.boolean().openapi({ example: true }),
   message: z.string().openapi({ example: 'Login successful.' }),
   data: z.object({
     accessToken: z.string().openapi({
@@ -40,7 +40,7 @@ const successAuthLogin = z.object({
 });
 
 const errorMessageTemplate = z.object({
-  success: z.string(),
+  success: z.boolean(),
   message: z.string(),
 });
 
@@ -71,7 +71,14 @@ const unprocessableEntityError = errorMessageTemplate
 const internalServerError = errorMessageTemplate.openapi({
   example: {
     success: false,
-    message: 'internal server error. failed to register.',
+    message: 'internal server error. failed to login.',
+  },
+});
+
+const timeOutError = errorMessageTemplate.openapi({
+  example: {
+    success: false,
+    message: 'request time out. failed to login.',
   },
 });
 
@@ -80,5 +87,6 @@ export {
   successAuthLogin,
   unprocessableEntityError,
   unauthorizedError,
+  timeOutError,
   internalServerError,
 };
