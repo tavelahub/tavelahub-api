@@ -38,13 +38,15 @@ const authRoutes = new OpenAPIHono({
   },
 });
 
+// register
+
 // login
 authRoutes.openapi(
   createRoute({
     method: 'post',
     path: '/login',
     summary: 'Login',
-    description: 'Register employee contains email and password',
+    description: 'Login user contains email and password',
     tags,
     request: { body: { content: { 'application/json': { schema: loginSchema } } } },
     responses: {
@@ -129,7 +131,6 @@ authRoutes.openapi(
 );
 
 // Logout
-
 // Refresh token
 // Me
 
