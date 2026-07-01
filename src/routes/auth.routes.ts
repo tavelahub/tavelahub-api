@@ -14,6 +14,7 @@ import {
 import { signAccessToken, signRefreshToken } from '../lib/auth';
 import { PrismaClientKnownRequestError } from '../generated/prisma/internal/prismaNamespace';
 import { getUserByEmail } from '../modules/user/user.services';
+import { addDays } from '../lib/date';
 
 const tags = ['Auth'];
 
@@ -81,6 +82,20 @@ authRoutes.openapi(
 
       const accessToken = await signAccessToken({ userId: user.id, email: user.email });
       const refreshToken = await signRefreshToken({ userId: user.id });
+
+      await prisma.refreshToken.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          token: refreshToken,
+          expiresAt: addDays(new Date(), 7),
+        },
+        update: {
+          userId: user.id,
+          token: refreshToken,
+          expiresAt: addDays(new Date(), 7),
+        },
+      });
 
       return c.json(
         {
